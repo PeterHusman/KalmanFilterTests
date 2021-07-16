@@ -4,7 +4,7 @@ using System;
 
 namespace KalmanFilters
 {
-    public class KalmanFilter
+    public class KalmanFilter : IKalmanFilter
     {
         public Matrix StateTransitionModel;
         public Matrix ObservationModel;
@@ -12,8 +12,8 @@ namespace KalmanFilters
         public Matrix ControlInputModel;
         public Matrix MeasurementCovariance;
 
-        public Vector StateEstimate;
-        public Matrix EstimateCovariance;
+        public Vector StateEstimate { get; private set; }
+        public Matrix EstimateCovariance { get; private set; }
 
         private Vector aPrioriState;
         private Matrix aPrioriCovariance;
