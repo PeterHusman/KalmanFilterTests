@@ -62,10 +62,10 @@ namespace KalmanFilters
             // Maybe put this here? I'm not 100%
             // sigmas = GetSigmaPoints(StateEstimate, EstimateCovariance, Kappa);
 
-            var sigmaCopy2 = new (Vector<double>, double, double)[sigmas.Length];
+            var sigmaCopy2 = new (Vector<double> sigmaPoint, double weight_mean, double weight_covariance)[sigmas.Length];
             for (int i = 0; i < sigmas.Length; i++)
             {
-                sigmaCopy2[i] = (ObservationModel((Vector)sigmas[i].sigmaPoint), sigmas[i].weight_mean, sigmas[i].weight_covariance);
+                sigmaCopy2[i] = (ObservationModel((Vector)sigmaCopy[i].Item1), sigmas[i].weight_mean, sigmas[i].weight_covariance);
             }
             (predictedMeasurements, predictedMeasurementCovariance) = UnscentedTransform(sigmaCopy2, MeasurementCovariance);
 
