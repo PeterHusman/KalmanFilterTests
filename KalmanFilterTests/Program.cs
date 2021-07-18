@@ -75,12 +75,14 @@ namespace KalmanFilterTests
             LinearAxis yAxis = new LinearAxis
             {
                 Minimum = 0,
-                Position = AxisPosition.Left
+                Position = AxisPosition.Left,
+                Title = "Estimated position"
             };
             LinearAxis xAxis = new LinearAxis
             {
                 Minimum = 0,
-                Position = AxisPosition.Bottom
+                Position = AxisPosition.Bottom,
+                Title = "Time (seconds)"
             };
             plot.Axes.Add(yAxis);
             plot.Axes.Add(xAxis);
@@ -117,7 +119,7 @@ namespace KalmanFilterTests
                 filter.Update(new DenseVector(new double[] { reading }));
 
 
-                Console.WriteLine($"Pos: {position:0.00}\t\tEstimate: {filter.StateEstimate[2]:0.00} {filter.StateEstimate[1]:0.00} {filter.StateEstimate[0]:0.00}\t\tVariances: {filter.EstimateCovariance[2, 2]:0.00} {filter.EstimateCovariance[1, 1]:0.00} {filter.EstimateCovariance[0, 0]:0.00}\t\tReading: {reading:0.00}");
+                //Console.WriteLine($"Pos: {position:0.00}\t\tEstimate: {filter.StateEstimate[2]:0.00} {filter.StateEstimate[1]:0.00} {filter.StateEstimate[0]:0.00}\t\tVariances: {filter.EstimateCovariance[2, 2]:0.00} {filter.EstimateCovariance[1, 1]:0.00} {filter.EstimateCovariance[0, 0]:0.00}\t\tReading: {reading:0.00}");
 
                 //acceleration += 0.3;
                 while (false && watch.Elapsed.TotalSeconds < deltaT)
