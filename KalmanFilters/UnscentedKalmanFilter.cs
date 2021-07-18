@@ -16,7 +16,7 @@ namespace KalmanFilters
         public Matrix MeasurementCovariance;
         public Vector StateEstimate { get; private set; }
         public Matrix EstimateCovariance { get; private set; }
-        private (Vector<double> sigmaPoint, double weight_mean, double weight_covariance)[] sigmas;
+        private (Vector<double> sigmaPoint, double weight_mean, double weight_covariance)[] Xi;
 
         private Vector<double> predictedMeasurements;
         private Matrix predictedMeasurementCovariance;
@@ -38,11 +38,11 @@ namespace KalmanFilters
 
         public void Predict()
         {
-            sigmas = GetSigmas(StateEstimate, EstimateCovariance);
-            var sigmaCopy = new (Vector<double>, double, double)[sigmas.Length];
-            for (int i = 0; i < sigmas.Length; i++)
+            Xi = GetSigmas(StateEstimate, EstimateCovariance);
+            var fXi = new (Vector<double> sigmaPoint, double weight_mean, double weight_covariance)[Xi.Length];
+            for (int i = 0; i < Xi.Length; i++)
             {
-                sigmaCopy[i] = (StateTransitionModel((Vector)sigmas[i].sigmaPoint), sigmas[i].weight_mean, sigmas[i].weight_covariance);
+                fXi[i] = (StateTransitionModel((Vector)Xi[i].sigmaPoint), Xi[i].weight_mean, Xi[i].weight_covariance);
             }
             // THIS STEP is to blame.
             // Why??
@@ -57,22 +57,22 @@ namespace KalmanFilters
             // Also now im leaning towards covariance isnt high *enough*
             // Because variance ends up like on the order of 10^4 or 10^5
             // But the error is like 10^10 or 10^20 or smthn
-            (StateEstimate, EstimateCovariance) = UnscentedTransform(sigmaCopy, ProcessNoiseCovariance);
+            (StateEstimate, EstimateCovariance) = UnscentedTransform(fXi, ProcessNoiseCovariance);
 
             // Maybe put this here? I'm not 100%
             // sigmas = GetSigmaPoints(StateEstimate, EstimateCovariance, Kappa);
 
-            var sigmaCopy2 = new (Vector<double> sigmaPoint, double weight_mean, double weight_covariance)[sigmas.Length];
-            for (int i = 0; i < sigmas.Length; i++)
+            var hXi = new (Vector<double> sigmaPoint, double weight_mean, double weight_covariance)[Xi.Length];
+            for (int i = 0; i < Xi.Length; i++)
             {
-                sigmaCopy2[i] = (ObservationModel((Vector)sigmaCopy[i].Item1), sigmas[i].weight_mean, sigmas[i].weight_covariance);
+                hXi[i] = (ObservationModel((Vector)fXi[i].sigmaPoint), Xi[i].weight_mean, Xi[i].weight_covariance);
             }
-            (predictedMeasurements, predictedMeasurementCovariance) = UnscentedTransform(sigmaCopy2, MeasurementCovariance);
+            (predictedMeasurements, predictedMeasurementCovariance) = UnscentedTransform(hXi, MeasurementCovariance);
 
             Matrix<double> stateAndPredictedMeasurementCovariance = new DenseMatrix(StateEstimate.Count, predictedMeasurements.Count);
-            for (int i = 0; i < sigmas.Length; i++)
+            for (int i = 0; i < Xi.Length; i++)
             {
-                stateAndPredictedMeasurementCovariance += sigmas[i].weight_covariance * ((sigmaCopy[i].Item1 - StateEstimate).ToColumnMatrix() /*.OuterProduct*/ * (sigmaCopy2[i].Item1 - predictedMeasurements).ToRowMatrix());
+                stateAndPredictedMeasurementCovariance += Xi[i].weight_covariance * ((fXi[i].sigmaPoint - StateEstimate).ToColumnMatrix() * (hXi[i].sigmaPoint - predictedMeasurements).ToRowMatrix());
             }
 
             kalmanGain = stateAndPredictedMeasurementCovariance * predictedMeasurementCovariance.Inverse();
@@ -117,6 +117,9 @@ namespace KalmanFilters
         public static (Vector<double> sigmaPoint, double weight_mean, double weight_covariance)[] GetSigmaPointsMethodTwo(Vector mean, Matrix covariance, double kappa)
         {
             int n = mean.Count;
+
+            // The LOWER CHOLESKY FACTOR.
+            // Do NOT confuse this for the UPPER factor.
             var chol = ((n + kappa) * covariance).Cholesky().Factor;
 
             
@@ -131,7 +134,7 @@ namespace KalmanFilters
 
             for (int i = 0; i < n; i++)
             {
-                var row = chol.Row(i);
+                var row = chol.Column(i);
                 points.Add((mean + row, weight, weight));
                 points.Add((mean - row, weight, weight));
             }
